@@ -18,7 +18,7 @@ extern "C"
 		char buf[MAX_PATH];
 		GetCurrentDirectoryA(MAX_PATH, buf);
 		SetCurrentDirectoryA(path);
-		HMODULE hm = LoadLibraryA(buf);
+		HMODULE hm = LoadLibraryA("SA2VsChatNET.dll");
 		if (hm == NULL)
 		{
 			SetCurrentDirectoryA(buf);
