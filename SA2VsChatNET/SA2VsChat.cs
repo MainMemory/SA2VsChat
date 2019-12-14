@@ -405,6 +405,12 @@ namespace SA2VsChatNET
         {
             Console.WriteLine("----------------------------------------------------------------------");
             Console.Write("Loading Settings. \n");
+            if (!File.Exists("config.ini"))
+            {
+                Console.WriteLine("Settings file not found!");
+                Console.WriteLine("Please use the \"Configure\" button in the mod manager to set up the mod.");
+                return;
+            }
             var MyIni = IniFile.IniSerializer.Deserialize<Settings>("config.ini");
             if (MyIni.General == null)
                 MyIni.General = new SettingsGeneral();
