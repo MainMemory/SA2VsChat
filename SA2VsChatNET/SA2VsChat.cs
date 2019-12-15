@@ -320,13 +320,26 @@ namespace SA2VsChatNET
             { "invincibility", 10 }
         };
 
-        public static void ProcessMessage(string message, string channelName)
+        static Dictionary<string, int> bonusDict = new Dictionary<string, int>()
+        {
+            { "good", 100 },
+            { "nice", 200 },
+            { "great", 300 },
+            { "jammin", 400 },
+            { "cool", 500 },
+            { "radical", 600 },
+            { "tight", 800 },
+            { "awesome", 1000 },
+            { "extreme", 1500 },
+            { "perfect", 2000 }
+        };
+
+        public static void ProcessMessage(string message, string userName)
 		{
-            channelName = channelName.ToLowerInvariant();
-            // A shitty way of doing this. (Using Relection would look nicer but takes alot more work)
+            userName = userName.ToLowerInvariant();
             message = message.ToLowerInvariant();
            // Console.WriteLine("From: {0} - Message:{1} ", channelName, msg);
-            if (channelName == "streamlabs")
+            if (userName == "streamlabs")
             {
 
                 message = message.Substring(2);
@@ -338,7 +351,7 @@ namespace SA2VsChatNET
 
             string[] split = message.Substring(1).Split(' ');
 
-            if (channelName == Room || channelName == AdminUsrName)
+            if (userName == Room || userName == AdminUsrName)
             {
                 // admin stuff
             }
@@ -350,11 +363,59 @@ namespace SA2VsChatNET
                         GiveItem(v);
                     else
                     {
-                        int i = RandomNumber(0, 9);
+                        int i = RandomNumber(0, 10);
                         if (i == 9)
                             ++i;
                         GiveItem(i);
                     }
+                    break;
+                case "omochao":
+                    SpawnOmochao();
+                    break;
+                case "voice":
+                    if (split.Length > 1 && int.TryParse(split[1], out int id))
+                        PlayVoice(id);
+                    else
+                        PlayVoice(RandomNumber(0, 2727));
+                    break;
+                case "stop":
+                    Stop();
+                    break;
+                case "gottagofast":
+                    GottaGoFast();
+                    break;
+                case "tsafogattog":
+                    TsafOgAttog();
+                    break;
+                case "superjump":
+                    SuperJump();
+                    break;
+                case "timestop":
+                    TimeStop();
+                    break;
+                case "die":
+                    Die(userName);
+                    break;
+                case "win":
+                    Win(userName);
+                    break;
+                case "grow":
+                    Grow();
+                    break;
+                case "shrink":
+                    Shrink();
+                    break;
+                case "bonus":
+                    if (split.Length > 1)
+                    {
+                        if (bonusDict.TryGetValue(split[1], out int val))
+                            Bonus(val);
+                        else if (int.TryParse(split[1], out val))
+                            Bonus(val);
+                        Bonus(bonusDict.Values.ElementAt(RandomNumber(0, bonusDict.Count)));
+                    }
+                    else
+                        Bonus(bonusDict.Values.ElementAt(RandomNumber(0, bonusDict.Count)));
                     break;
             }
 
@@ -441,6 +502,30 @@ namespace SA2VsChatNET
         
         [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         public static extern void GiveItem(int item);
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SpawnOmochao();
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PlayVoice(int id);
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Stop();
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void GottaGoFast();
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void TsafOgAttog();
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SuperJump();
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void TimeStop();
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Die([MarshalAs(UnmanagedType.LPStr)] string user);
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Win([MarshalAs(UnmanagedType.LPStr)] string user);
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Grow();
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Shrink();
+        [DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Bonus(int scr);
     }
 
 }
