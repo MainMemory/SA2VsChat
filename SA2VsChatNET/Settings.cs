@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,12 @@ namespace SA2VsChatNET
 	{
 		public string AdminUsername { get; set; }
 		public bool BuildHTMLPagesForOverlay { get; set; }
+		[DefaultValue(5.0)]
+		public double DieCommandTimeout { get; set; } = 5;
+		[DefaultValue(5.0)]
+		public double WinCommandTimeout { get; set; } = 5;
+		[DefaultValue(3)]
+		public int MaximumVoteResults { get; set; } = 3;
 	}
 
 	public class SettingsTwitch

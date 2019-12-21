@@ -46,11 +46,95 @@ void CheckLoadOmochao(ObjectMaster* obj)
 	}
 }
 
+double targetSize = 1;
+double currentSize = 1;
+double growthAmount = 0;
+void SetTargetSize(double trgt)
+{
+	targetSize = trgt;
+	growthAmount = abs(targetSize - currentSize) / 60;
+}
+
+const char* MusicList2[157];
+
+// void __usercall(StoryEntry *a1@<edx>)
+static const void* const LoadStoryEventPtr = (void*)0x4589D0;
+static inline void LoadStoryEvent(StoryEntry* a1)
+{
+	__asm
+	{
+		mov edx, [a1]
+		call LoadStoryEventPtr
+	}
+}
+
+void (*ResetVotes)(int eventno);
+StoryEntry NextStoryEntry;
+DataArray(StoryEntry, IntroStorySequence, 0x173A5E0, 2);
+DataPointer(char, NextStoryEvent, 0x1DEB31E);
+DataPointer(char, CurrentStoryEvent, 0x1DEB31F);
+DataPointer(char, CurrentStorySequence, 0x1DEB320);
+void __cdecl GetNextStoryEvent_r()
+{
+	switch (CurrentStorySequence)
+	{
+	case 1:
+	case 2:
+	case 3:
+	case 0xC:
+	case 0xD:
+	case 0xE:
+		LoadStoryEvent(&NextStoryEntry);
+		CurrentStoryEvent = NextStoryEvent;
+		ResetVotes(CurrentStoryEvent);
+		break;
+	case 4:
+		LoadStoryEvent(&IntroStorySequence[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	case 5:
+		LoadStoryEvent(&((StoryEntry*)0x1730074)[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	case 6:
+		LoadStoryEvent(&((StoryEntry*)0x173089C)[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	case 7:
+		LoadStoryEvent(&((StoryEntry*)0x173A5F8)[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	case 8:
+		LoadStoryEvent(&((StoryEntry*)0x1730AC4)[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	case 9:
+		LoadStoryEvent(&((StoryEntry*)0x17312EC)[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	case 0xA:
+		LoadStoryEvent(&((StoryEntry*)0x173A610)[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	case 0xB:
+		LoadStoryEvent(&((StoryEntry*)0x17318CC)[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	case 0xF:
+		LoadStoryEvent(&((StoryEntry*)0x173A7EC)[(unsigned __int8)NextStoryEvent]);
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	default:
+		CurrentStoryEvent = NextStoryEvent;
+		break;
+	}
+}
+
 extern "C"
 {
 	__declspec(dllexport) void GiveItem(int item)
 	{
-		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
+		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead) && CurrentLevel < LevelIDs_Route101280)
 		{
 			DisplayItemBoxItem(0, ItemBox_Items[item].Texture);
 			ItemBox_Items[item].Code(MainCharacter[0], 0);
@@ -96,52 +180,209 @@ extern "C"
 			MainCharObj2[0]->Speed.y = MainCharObj2[0]->PhysData.VSpeedCap;
 	}
 
+	__declspec(dllexport) void PmujRepus()
+	{
+		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
+			MainCharObj2[0]->Speed.y = -MainCharObj2[0]->PhysData.VSpeedCap;
+	}
+
 	__declspec(dllexport) void TimeStop()
 	{
 		TimeStopped ^= 2;
 	}
 
-	__declspec(dllexport) void Die(const char *user)
+	__declspec(dllexport) bool Die(const char *user)
 	{
-		if (TimerMinutes >= 1 && MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
+		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
 		{
 			PrintDebug("Killed by %s!", user);
 			KillPlayer(0);
+			return true;
 		}
+		return false;
 	}
 
-	__declspec(dllexport) void Win(const char *user)
+	__declspec(dllexport) bool Win(const char *user)
 	{
-		if (TimerMinutes >= 1 && MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
+		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
 		{
 			PrintDebug("Level ended by %s!", user);
 			AwardWin(0);
+			return true;
 		}
+		return false;
 	}
 
 	__declspec(dllexport) void Grow()
 	{
-		if (MainCharObj1[0])
-		{
-			MainCharObj1[0]->Scale.x *= 2;
-			MainCharObj1[0]->Scale.y *= 2;
-			MainCharObj1[0]->Scale.z *= 2;
-		}
+		SetTargetSize(targetSize * 2);
 	}
 
 	__declspec(dllexport) void Shrink()
 	{
-		if (MainCharObj1[0])
-		{
-			MainCharObj1[0]->Scale.x /= 2;
-			MainCharObj1[0]->Scale.y /= 2;
-			MainCharObj1[0]->Scale.z /= 2;
-		}
+		SetTargetSize(targetSize / 2);
 	}
 
 	__declspec(dllexport) void Bonus(int scr)
 	{
-		DispTechniqueScore_Load(scr);
+		if (GameState == GameStates_Ingame)
+			DispTechniqueScore_Load(scr);
+	}
+
+	__declspec(dllexport) void PlayMusic(int id)
+	{
+		PlayMusic(MusicList2[id]);
+		ResetMusic();
+	}
+
+	__declspec(dllexport) void HighGravity()
+	{
+		if (MainCharObj2[0])
+			MainCharObj2[0]->PhysData.Gravity *= 2;
+	}
+
+	__declspec(dllexport) void LowGravity()
+	{
+		if (MainCharObj2[0])
+			MainCharObj2[0]->PhysData.Gravity /= 2;
+	}
+
+	__declspec(dllexport) void HealBoss()
+	{
+		if (MainCharObj1[1] && MainCharObj1[1]->field_2 == 3 && MainCharObj2[1]->MechHP < 5)
+			++MainCharObj2[1]->MechHP;
+	}
+
+	__declspec(dllexport) void SetNextStoryEvent(char type, short id, bool dark)
+	{
+		NextStoryEntry.Type = type;
+		switch (type)
+		{
+		case StoryEntryType_Level:
+			NextStoryEntry.Level = id;
+			switch (id)
+			{
+			case LevelIDs_CityEscape:
+			case LevelIDs_BigFoot:
+			case LevelIDs_MetalHarbor:
+			case LevelIDs_GreenForest:
+			case LevelIDs_PyramidCave:
+			case LevelIDs_EggGolemS:
+			case LevelIDs_CrazyGadget:
+			case LevelIDs_FinalRush:
+			case LevelIDs_GreenHill:
+				NextStoryEntry.Character = Characters_Sonic;
+				break;
+			case LevelIDs_HotShot:
+			case LevelIDs_RadicalHighway:
+			case LevelIDs_WhiteJungle:
+			case LevelIDs_SkyRail:
+			case LevelIDs_FinalChase:
+			case LevelIDs_Biolizard:
+				NextStoryEntry.Character = Characters_Shadow;
+				break;
+			case LevelIDs_WildCanyon:
+			case LevelIDs_PumpkinHill:
+			case LevelIDs_AquaticMine:
+			case LevelIDs_DeathChamber:
+			case LevelIDs_KingBoomBoo:
+			case LevelIDs_MeteorHerd:
+				NextStoryEntry.Character = Characters_Knuckles;
+				break;
+			case LevelIDs_DryLagoon:
+			case LevelIDs_EggQuarters:
+			case LevelIDs_SecurityHall:
+			case LevelIDs_FlyingDog:
+			case LevelIDs_MadSpace:
+				NextStoryEntry.Character = Characters_Rouge;
+				break;
+			case LevelIDs_PrisonLane:
+			case LevelIDs_MissionStreet:
+			case LevelIDs_HiddenBase:
+			case LevelIDs_EternalEngine:
+			case LevelIDs_CannonsCoreT:
+				NextStoryEntry.Character = Characters_MechTails;
+				break;
+			case LevelIDs_IronGate:
+			case LevelIDs_SandOcean:
+			case LevelIDs_LostColony:
+			case LevelIDs_WeaponsBed:
+			case LevelIDs_EggGolemE:
+			case LevelIDs_CosmicWall:
+				NextStoryEntry.Character = Characters_MechEggman;
+				break;
+			case LevelIDs_SonicVsShadow1:
+			case LevelIDs_SonicVsShadow2:
+				if (dark)
+					NextStoryEntry.Character = Characters_Shadow;
+				else
+					NextStoryEntry.Character = Characters_Sonic;
+				break;
+			case LevelIDs_KnucklesVsRouge:
+				if (dark)
+					NextStoryEntry.Character = Characters_Rouge;
+				else
+					NextStoryEntry.Character = Characters_Knuckles;
+				break;
+			case LevelIDs_TailsVsEggman1:
+			case LevelIDs_TailsVsEggman2:
+				if (dark)
+					NextStoryEntry.Character = Characters_MechEggman;
+				else
+					NextStoryEntry.Character = Characters_MechTails;
+				break;
+			case LevelIDs_Route101280:
+				if (dark)
+					NextStoryEntry.Character = Characters_Rouge;
+				else
+					NextStoryEntry.Character = Characters_MechTails;
+				break;
+			}
+			break;
+		case StoryEntryType_Event:
+			NextStoryEntry.Events[0] = id;
+			break;
+		}
+	}
+
+	__declspec(dllexport) void Confuse()
+	{
+		if (MainCharObj2[0] && !MainCharObj2[0]->ConfuseTime)
+		{
+			MainCharObj2[0]->ConfuseTime = 300;
+			ConfuStar_Load(0);
+		}
+	}
+
+	__declspec(dllexport) void OnFrame()
+	{
+		if (MainCharObj1[0])
+		{
+			if (currentSize < targetSize)
+			{
+				currentSize += growthAmount;
+				if (currentSize > targetSize)
+					currentSize = targetSize;
+				MainCharObj1[0]->Scale.x = (float)currentSize;
+				MainCharObj1[0]->Scale.y = (float)currentSize;
+				MainCharObj1[0]->Scale.z = (float)currentSize;
+			}
+			else if (currentSize > targetSize)
+			{
+				currentSize -= growthAmount;
+				if (currentSize < targetSize)
+					currentSize = targetSize;
+				MainCharObj1[0]->Scale.x = (float)currentSize;
+				MainCharObj1[0]->Scale.y = (float)currentSize;
+				MainCharObj1[0]->Scale.z = (float)currentSize;
+			}
+		}
+		else
+		{
+			targetSize = 1;
+			currentSize = 1;
+			growthAmount = 0;
+		}
 	}
 
 	__declspec(dllexport) void Init(const char* path, const HelperFunctions& helperFunctions)
@@ -156,8 +397,14 @@ extern "C"
 			PrintDebug("SA2VsChat: Failed to load helper DLL, mod will not function!");
 			return;
 		}
-		GetProcAddress(hm, "TwitchIRCStart")();
+		GetProcAddress(hm, "Main")();
 		SetCurrentDirectoryA(buf);
+		memcpy(MusicList2, MusicList, MusicList_Length);
+		MusicList2[156] = "chao_g_iede.adx";
+		ResetVotes = (decltype(ResetVotes))GetProcAddress(hm, "ResetVotes");
+		WriteJump((void*)0x4586A0, GetNextStoryEvent_r);
+		NextStoryEntry.Type = StoryEntryType_End;
+		memset(NextStoryEntry.Events, -1, 4);
 	}
 
 	__declspec(dllexport) ModInfo SA2ModInfo { ModLoaderVer };
