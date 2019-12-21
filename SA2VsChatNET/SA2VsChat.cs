@@ -670,6 +670,12 @@ namespace SA2VsChatNET
 				case "confuse":
 					Confuse();
 					break;
+				case "earthquake":
+					Earthquake();
+					break;
+				case "chaokey":
+					ToggleChaoKey();
+					break;
 				case "level":
 					if (split.Length > 1 && levelmap.TryGetValue(split[1], out LevelIDs lvl))
 					{
@@ -856,6 +862,10 @@ namespace SA2VsChatNET
 		public static extern void HealBoss();
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void Confuse();
+		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern void Earthquake();
+		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern void ToggleChaoKey();
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void SetNextStoryEvent(byte type, short id, bool dark);
 	}

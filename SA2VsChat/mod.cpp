@@ -354,6 +354,22 @@ extern "C"
 		}
 	}
 
+	__declspec(dllexport) void Earthquake()
+	{
+		if (MainCharacter[0])
+		{
+			char d2[]{ 0, 0 };
+			ObjectMaster om {};
+			om.Data2.Undefined = d2;
+			Knuckles2PEarthquakeMan_Delete(&om);
+		}
+	}
+
+	__declspec(dllexport) void ToggleChaoKey()
+	{
+		HaveChaoKey ^= 1;
+	}
+
 	__declspec(dllexport) void OnFrame()
 	{
 		if (MainCharObj1[0])
