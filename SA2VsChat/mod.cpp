@@ -411,12 +411,14 @@ extern "C"
 
 	__declspec(dllexport) void ToggleChaoKey()
 	{
-		HaveChaoKey ^= 1;
+		if (MainCharacter[0])
+			HaveChaoKey ^= 1;
 	}
 
 	__declspec(dllexport) void ToggleWater()
 	{
-		invwater = !invwater;
+		if (MainCharacter[0])
+			invwater = !invwater;
 	}
 
 	__declspec(dllexport) void OnFrame()
@@ -448,6 +450,7 @@ extern "C"
 			currentSize = 1;
 			growthAmount = 0;
 			gravmult = 1;
+			invwater = false;
 		}
 	}
 
