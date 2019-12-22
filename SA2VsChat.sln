@@ -4,10 +4,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.29519.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SA2VsChat", "SA2VsChat\SA2VsChat.vcxproj", "{35A36CC2-1A9C-4E5D-B9FB-212F063A4B7E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{83C0F6B3-2297-4A14-98D6-F9C3E99192CE} = {83C0F6B3-2297-4A14-98D6-F9C3E99192CE}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SA2VsChatNET", "SA2VsChatNET\SA2VsChatNET.csproj", "{94DF160F-8B3F-4038-86C5-9A0FCA9364F1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModManagerCommon", "mod-loader-common\ModManagerCommon\ModManagerCommon.csproj", "{4A480502-79B5-4E1E-8D67-16C514BB13CD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmodutils", "sa2-mod-loader\libmodutils\libmodutils.vcxproj", "{83C0F6B3-2297-4A14-98D6-F9C3E99192CE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,6 +42,12 @@ Global
 		{4A480502-79B5-4E1E-8D67-16C514BB13CD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4A480502-79B5-4E1E-8D67-16C514BB13CD}.Release|x86.ActiveCfg = Release|Any CPU
 		{4A480502-79B5-4E1E-8D67-16C514BB13CD}.Release|x86.Build.0 = Release|Any CPU
+		{83C0F6B3-2297-4A14-98D6-F9C3E99192CE}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{83C0F6B3-2297-4A14-98D6-F9C3E99192CE}.Debug|x86.ActiveCfg = Debug|Win32
+		{83C0F6B3-2297-4A14-98D6-F9C3E99192CE}.Debug|x86.Build.0 = Debug|Win32
+		{83C0F6B3-2297-4A14-98D6-F9C3E99192CE}.Release|Any CPU.ActiveCfg = Release|Win32
+		{83C0F6B3-2297-4A14-98D6-F9C3E99192CE}.Release|x86.ActiveCfg = Release|Win32
+		{83C0F6B3-2297-4A14-98D6-F9C3E99192CE}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

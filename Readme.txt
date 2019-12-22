@@ -20,6 +20,7 @@ Commands:
 !confuse - confuses the player for 5 seconds
 !earthquake - causes an earthquake
 !chaokey - toggles the chao key
+!water - toggles underwater status
 !level {id} - casts a vote for the next level to be played in the story
 !event {id} - casts a vote for the next event to be played in the story
 !credits - casts a vote for the next story scene to be credits, only selectable once per story

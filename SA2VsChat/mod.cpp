@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <random>
 #include "..\sa2-mod-loader\SA2ModLoader\include\SA2ModLoader.h"
+#include "..\sa2-mod-loader\libmodutils\Trampoline.h"
 
 std::random_device rd;
 std::default_random_engine gen(rd());
@@ -130,6 +131,49 @@ void __cdecl GetNextStoryEvent_r()
 	}
 }
 
+double gravmult = 1;
+void __fastcall sub_459910(CharObj2Base* co2)
+{
+	switch (CurrentLevel)
+	{
+	case LevelIDs_FinalRush:
+	case LevelIDs_MeteorHerd:
+	case LevelIDs_FinalChase:
+	case LevelIDs_CosmicWall:
+	case LevelIDs_MadSpace:
+	case LevelIDs_PlanetQuest:
+	case LevelIDs_CosmicWall2P:
+		switch (co2->CharID)
+		{
+		case Characters_Sonic:
+		case Characters_Shadow:
+		case Characters_Knuckles:
+		case Characters_Rouge:
+		case Characters_MechTails:
+		case Characters_MechEggman:
+			co2->PhysData.Gravity = 0.07 * gravmult;
+			break;
+		default:
+			co2->PhysData.Gravity = PhysicsArray[CurrentLevel - LevelIDs_FinalRush].Gravity * gravmult;
+			break;
+		}
+		break;
+	default:
+		co2->PhysData.Gravity = PhysicsArray[co2->CharID].Gravity * gravmult;
+		break;
+	}
+}
+
+void DoWaterThing(int a1, int* a2);
+bool invwater = false;
+Trampoline watertramp(0x494DF0, 0x494DFA, DoWaterThing);
+void DoWaterThing(int a1, int *a2)
+{
+	((decltype(DoWaterThing)*)watertramp.Target())(a1, a2);
+	if (invwater)
+		a2[2] ^= 2;
+}
+
 extern "C"
 {
 	__declspec(dllexport) void GiveItem(int item)
@@ -237,14 +281,14 @@ extern "C"
 
 	__declspec(dllexport) void HighGravity()
 	{
-		if (MainCharObj2[0])
-			MainCharObj2[0]->PhysData.Gravity *= 2;
+		if (MainCharObj1[0])
+			gravmult *= 2;
 	}
 
 	__declspec(dllexport) void LowGravity()
 	{
-		if (MainCharObj2[0])
-			MainCharObj2[0]->PhysData.Gravity /= 2;
+		if (MainCharObj1[0])
+			gravmult /= 2;
 	}
 
 	__declspec(dllexport) void HealBoss()
@@ -370,6 +414,11 @@ extern "C"
 		HaveChaoKey ^= 1;
 	}
 
+	__declspec(dllexport) void ToggleWater()
+	{
+		invwater = !invwater;
+	}
+
 	__declspec(dllexport) void OnFrame()
 	{
 		if (MainCharObj1[0])
@@ -398,6 +447,7 @@ extern "C"
 			targetSize = 1;
 			currentSize = 1;
 			growthAmount = 0;
+			gravmult = 1;
 		}
 	}
 
@@ -415,12 +465,13 @@ extern "C"
 		}
 		GetProcAddress(hm, "Main")();
 		SetCurrentDirectoryA(buf);
-		memcpy(MusicList2, MusicList, MusicList_Length);
+		memcpy(MusicList2, MusicList, MusicList_Length * 4);
 		MusicList2[156] = "chao_g_iede.adx";
 		ResetVotes = (decltype(ResetVotes))GetProcAddress(hm, "ResetVotes");
 		WriteJump((void*)0x4586A0, GetNextStoryEvent_r);
 		NextStoryEntry.Type = StoryEntryType_End;
 		memset(NextStoryEntry.Events, -1, 4);
+		WriteJump((void*)0x459910, sub_459910);
 	}
 
 	__declspec(dllexport) ModInfo SA2ModInfo { ModLoaderVer };

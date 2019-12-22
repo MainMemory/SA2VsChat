@@ -392,8 +392,11 @@ namespace SA2VsChatNET
 			else if (eventno == 0)
 				allowCredits = true;
 			storyLength = eventno + 1;
+			if (AllowBuildHTMLPagesForOverlay)
+				DoBuildHTML();
 		}
 
+		static string modDir;
 		public static void DoBuildHTML()
 		{
 			StringBuilder strBldr = new StringBuilder();
@@ -416,11 +419,9 @@ namespace SA2VsChatNET
 			writer.Write("<h3>Votes:</h3>");
 			if (tally.Count > 0)
 			{
-				writer.Write("<table>\n");
-
 				foreach (var item in tally.OrderByDescending(a=>a.Value).Take(Math.Min(tally.Count, MaximumVoteResults)))
 				{
-					writer.Write("<tr><td>");
+					writer.Write("<div>");
 					switch (item.Key.Type)
 					{
 						case StoryEntryType.Event:
@@ -508,13 +509,21 @@ namespace SA2VsChatNET
 							writer.Write(item.Key.Type);
 							break;
 					}
-					writer.Write($"</td><td>{item.Value}</td></tr>");
+					writer.Write($": {item.Value}</div>");
 				}
-
-				writer.Write("</table>\n");
 			}
 			else
 				writer.Write("<div>No votes!</div>");
+
+			writer.Write("<h3>Die command is ");
+			if (DateTime.Now - lastDieCommand <= dieCommandTimeout)
+				writer.Write("not ");
+			writer.Write("available.</h3>");
+
+			writer.Write("<h3>Win command is ");
+			if (DateTime.Now - lastWinCommand <= winCommandTimeout)
+				writer.Write("not ");
+			writer.Write("available.</h3>");
 
 			// </body>
 			writer.RenderEndTag();
@@ -523,7 +532,7 @@ namespace SA2VsChatNET
 			writer.RenderEndTag();
 			try
 			{
-				File.WriteAllText("VoteStatus.html", strBldr.ToString());
+				File.WriteAllText(Path.Combine(modDir, "VoteStatus.html"), strBldr.ToString());
 			}
 			catch
 			{
@@ -589,8 +598,11 @@ namespace SA2VsChatNET
 			switch (split[0])
 			{
 				case "item":
-					if (split.Length > 1 && itemDict.TryGetValue(split[1], out int v))
-						GiveItem(v);
+					if (split.Length > 1)
+					{
+						if (itemDict.TryGetValue(split[1], out int v))
+							GiveItem(v);
+					}
 					else
 					{
 						int i = RandomNumber(0, 10);
@@ -603,8 +615,11 @@ namespace SA2VsChatNET
 					SpawnOmochao();
 					break;
 				case "voice":
-					if (split.Length > 1 && int.TryParse(split[1], out int id))
-						PlayVoice(Math.Max(Math.Min(0, id), 2726));
+					if (split.Length > 1)
+					{
+						if (int.TryParse(split[1], out int id) && id >= 0 && id < 2727)
+							PlayVoice(Math.Min(Math.Max(0, id), 2726));
+					}
 					else
 						PlayVoice(RandomNumber(0, 2727));
 					break;
@@ -647,14 +662,16 @@ namespace SA2VsChatNET
 							Bonus(val);
 						else if (int.TryParse(split[1], out val))
 							Bonus(val);
-						Bonus(bonusDict.Values.ElementAt(RandomNumber(0, bonusDict.Count)));
 					}
 					else
 						Bonus(bonusDict.Values.ElementAt(RandomNumber(0, bonusDict.Count)));
 					break;
 				case "music":
-					if (split.Length > 1 && int.TryParse(split[1], out id))
-						PlayMusic(Math.Max(Math.Min(0, id), 156));
+					if (split.Length > 1)
+					{
+						if (int.TryParse(split[1], out int mus) && mus >= 0 && mus < 157)
+							PlayMusic(mus);
+					}
 					else
 						PlayMusic(RandomNumber(0, 157));
 					break;
@@ -675,6 +692,9 @@ namespace SA2VsChatNET
 					break;
 				case "chaokey":
 					ToggleChaoKey();
+					break;
+				case "water":
+					ToggleWater();
 					break;
 				case "level":
 					if (split.Length > 1 && levelmap.TryGetValue(split[1], out LevelIDs lvl))
@@ -752,6 +772,7 @@ namespace SA2VsChatNET
 
 		public static void TwitchIRCStart()
 		{
+			modDir = Environment.CurrentDirectory;
 			LoadINIFile();
 			//TwitchIRCThread Tirc = new Thread(PulseTwitchIRC);
 			//Tirc.Start();
@@ -866,6 +887,8 @@ namespace SA2VsChatNET
 		public static extern void Earthquake();
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void ToggleChaoKey();
+		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern void ToggleWater();
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void SetNextStoryEvent(byte type, short id, bool dark);
 	}
