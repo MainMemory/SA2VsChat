@@ -60,7 +60,7 @@ namespace SA2VsChatNET
             GetMessages.Start();
             while (true)
             {
-                if(GetMessagesIsRuning == false)
+                lock (YoutubeMessageList)
                 {
                     //Console.Write("Codehit! \n");
                     CheckMessageList();
@@ -69,13 +69,13 @@ namespace SA2VsChatNET
                 Thread.Sleep(10);
             }
         }
-        public static bool GetMessagesIsRuning = false;
         public static void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            GetMessagesIsRuning = true;
-            Console.Write("RanYoutubeCheck! \n");
-            Youtube.Get_Chat(SA2VsChat.YoutubeVideoIDFromSettings);
-            GetMessagesIsRuning = false;
+            lock (YoutubeMessageList)
+            {
+                Console.Write("RanYoutubeCheck! \n");
+                Get_Chat(SA2VsChat.YoutubeVideoIDFromSettings);
+            }
         }
         public static void CheckMessageList()
         {
@@ -175,6 +175,7 @@ namespace SA2VsChatNET
                         MessageUUID = Convert.ToString(item["id"]);
                         MessageAuthor = Convert.ToString(item["authorDetails"]["displayName"]);
                         MessageDateTime = DateTime.Parse(Convert.ToString(item["snippet"]["publishedAt"]));
+                        if (MessageDateTime < TimeDateStarted) continue;
                         //Console.Write("YTU-UID: {0} - FROM: {1} - Message: {2} \n", MessageUUID, MessageAuthor, ReturnString);
                         if (SeenUUIDs.Count > 0)
                         {
@@ -182,13 +183,11 @@ namespace SA2VsChatNET
                             {
                                 //Message Is Unique - send it!
                                 //
-                                DateTime CurrentMesageTime;
                                 
                                 YoutubeMessage.UUID = MessageUUID;
                                 YoutubeMessage.Author = MessageAuthor;
                                 YoutubeMessage.Message = ReturnString;
                                 YoutubeMessage.PublishedTime = MessageDateTime;
-                                //CurrentMessageTime = Convert.ToDateTime(YoutubeMessage.PublishedTime);
                                 YoutubeMessageList.Add(YoutubeMessage);
 
                                 Console.Write("YTU-UID: {0} - FROM: {1} - Message: {2} \n", MessageUUID, MessageAuthor, ReturnString);
