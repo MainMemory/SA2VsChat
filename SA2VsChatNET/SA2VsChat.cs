@@ -69,10 +69,9 @@ namespace SA2VsChatNET
 		public static string Key = "";
 		public static int Port = 6667;
 
-		public static TwitchIRCClient TwitchClient = new TwitchIRCClient(ServerIP, Port, User, Key);
-		
 		public static void ProcessTwitchClient()
 		{
+			TwitchIRCClient TwitchClient = new TwitchIRCClient(ServerIP, Port, User, Key);
 			TwitchClient.JoinChannel(Room);
 			while (TwitchClient.connected)
 			{
