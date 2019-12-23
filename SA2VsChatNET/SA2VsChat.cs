@@ -816,7 +816,7 @@ namespace SA2VsChatNET
 				MyIni.Discord = new SettingsDiscord();
 			if (MyIni.YouTube == null)
 				MyIni.YouTube = new SettingsYouTube();
-			AdminUsrName = MyIni.General.AdminUsername.ToLowerInvariant();
+			AdminUsrName = MyIni.General.AdminUsername?.ToLowerInvariant();
 		   
 			AllowBuildHTMLPagesForOverlay = MyIni.General.BuildHTMLPagesForOverlay;
 			if (AllowBuildHTMLPagesForOverlay)
@@ -831,9 +831,7 @@ namespace SA2VsChatNET
 			MaximumVoteResults = MyIni.General.MaximumVoteResults;
 
 			EnableTwitchSupport = MyIni.Twitch.Enable;
-			Room = MyIni.Twitch.ChannelName;
-			if (Room != null)
-				Room = Room.ToLowerInvariant();
+			Room = MyIni.Twitch.ChannelName?.ToLowerInvariant();
 			EnableDiscordSupport = MyIni.Discord.Enable;
 			Discord.TempTokenToLoad = MyIni.Discord.BotKey;
 			EnableYoutubeSupport = MyIni.YouTube.Enable;
