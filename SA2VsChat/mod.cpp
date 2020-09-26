@@ -1,8 +1,9 @@
 #include "pch.h"
 #include <cstdio>
 #include <random>
-#include "..\sa2-mod-loader\SA2ModLoader\include\SA2ModLoader.h"
-#include "..\sa2-mod-loader\libmodutils\Trampoline.h"
+#include "SA2ModLoader.h"
+#include "Trampoline.h"
+#include "..\SA2CharSel\SA2CharSel\Base.h"
 
 std::random_device rd;
 std::default_random_engine gen(rd());
@@ -71,7 +72,13 @@ static inline void LoadStoryEvent(StoryEntry* a1)
 
 void (*ResetVotes)(int eventno);
 StoryEntry NextStoryEntry;
+DataArray(StoryEntry, HeroStorySequence, 0x173A148, 46);
+DataArray(StoryEntry, DarkStorySequence, 0x173A370, 44);
+DataArray(StoryEntry, LastStorySequence, 0x173A580, 8);
 DataArray(StoryEntry, IntroStorySequence, 0x173A5E0, 2);
+DataArray(StoryEntry, HeroBossRushSequence, 0x173A628, 9);
+DataArray(StoryEntry, DarkBossRushSequence, 0x173A698, 9);
+DataArray(StoryEntry, AllBossRushSequence, 0x173A708, 19);
 DataPointer(char, NextStoryEvent, 0x1DEB31E);
 DataPointer(char, CurrentStoryEvent, 0x1DEB31F);
 DataPointer(char, CurrentStorySequence, 0x1DEB320);
@@ -80,14 +87,31 @@ void __cdecl GetNextStoryEvent_r()
 	switch (CurrentStorySequence)
 	{
 	case 1:
-	case 2:
-	case 3:
-	case 0xC:
-	case 0xD:
-	case 0xE:
-		LoadStoryEvent(&NextStoryEntry);
+		if (NextStoryEntry.Type == -1)
+			LoadStoryEvent(&HeroStorySequence[(unsigned __int8)min(NextStoryEvent, HeroStorySequence_Length - 1)]);
+		else
+			LoadStoryEvent(&NextStoryEntry);
 		CurrentStoryEvent = NextStoryEvent;
 		ResetVotes(CurrentStoryEvent);
+		NextStoryEntry.Type = -1;
+		break;
+	case 2:
+		if (NextStoryEntry.Type == -1)
+			LoadStoryEvent(&DarkStorySequence[(unsigned __int8)min(NextStoryEvent, DarkStorySequence_Length - 1)]);
+		else
+			LoadStoryEvent(&NextStoryEntry);
+		CurrentStoryEvent = NextStoryEvent;
+		ResetVotes(CurrentStoryEvent);
+		NextStoryEntry.Type = -1;
+		break;
+	case 3:
+		if (NextStoryEntry.Type == -1)
+			LoadStoryEvent(&LastStorySequence[(unsigned __int8)min(NextStoryEvent, LastStorySequence_Length - 1)]);
+		else
+			LoadStoryEvent(&NextStoryEntry);
+		CurrentStoryEvent = NextStoryEvent;
+		ResetVotes(CurrentStoryEvent);
+		NextStoryEntry.Type = -1;
 		break;
 	case 4:
 		LoadStoryEvent(&IntroStorySequence[(unsigned __int8)NextStoryEvent]);
@@ -121,6 +145,33 @@ void __cdecl GetNextStoryEvent_r()
 		LoadStoryEvent(&((StoryEntry*)0x17318CC)[(unsigned __int8)NextStoryEvent]);
 		CurrentStoryEvent = NextStoryEvent;
 		break;
+	case 0xC:
+		if (NextStoryEntry.Type == -1)
+			LoadStoryEvent(&HeroBossRushSequence[(unsigned __int8)min(NextStoryEvent, HeroBossRushSequence_Length - 1)]);
+		else
+			LoadStoryEvent(&NextStoryEntry);
+		CurrentStoryEvent = NextStoryEvent;
+		ResetVotes(CurrentStoryEvent);
+		NextStoryEntry.Type = -1;
+		break;
+	case 0xD:
+		if (NextStoryEntry.Type == -1)
+			LoadStoryEvent(&DarkBossRushSequence[(unsigned __int8)min(NextStoryEvent, DarkBossRushSequence_Length - 1)]);
+		else
+			LoadStoryEvent(&NextStoryEntry);
+		CurrentStoryEvent = NextStoryEvent;
+		ResetVotes(CurrentStoryEvent);
+		NextStoryEntry.Type = -1;
+		break;
+	case 0xE:
+		if (NextStoryEntry.Type == -1)
+			LoadStoryEvent(&AllBossRushSequence[(unsigned __int8)min(NextStoryEvent, AllBossRushSequence_Length - 1)]);
+		else
+			LoadStoryEvent(&NextStoryEntry);
+		CurrentStoryEvent = NextStoryEvent;
+		ResetVotes(CurrentStoryEvent);
+		NextStoryEntry.Type = -1;
+		break;
 	case 0xF:
 		LoadStoryEvent(&((StoryEntry*)0x173A7EC)[(unsigned __int8)NextStoryEvent]);
 		CurrentStoryEvent = NextStoryEvent;
@@ -132,7 +183,7 @@ void __cdecl GetNextStoryEvent_r()
 }
 
 double gravmult = 1;
-void __fastcall sub_459910(CharObj2Base* co2)
+void __fastcall sub_459910_i(CharObj2Base* co2)
 {
 	switch (CurrentLevel)
 	{
@@ -164,6 +215,13 @@ void __fastcall sub_459910(CharObj2Base* co2)
 	}
 }
 
+void __fastcall sub_459910(CharObj2Base* co2)
+{
+	__asm { push ecx }
+	sub_459910_i(co2);
+	__asm { pop ecx }
+}
+
 void DoWaterThing(int a1, int* a2);
 bool invwater = false;
 Trampoline watertramp(0x494DF0, 0x494DFA, DoWaterThing);
@@ -174,6 +232,27 @@ void DoWaterThing(int a1, int *a2)
 		a2[2] ^= 2;
 }
 
+void (__cdecl* CharLoadFuncs[])(int) = {
+	LoadSonic,
+	LoadShadow,
+	LoadTails,
+	LoadEggman,
+	LoadKnuckles,
+	LoadRouge,
+	LoadMechTails,
+	LoadMechEggman,
+	LoadAmy,
+	nullptr,
+	nullptr,
+	nullptr,
+	LoadMetalSonic,
+	LoadChaoWalker,
+	LoadDarkChaoWalker,
+	LoadTikal,
+	LoadChaos
+};
+
+int fasttimer = 0;
 extern "C"
 {
 	__declspec(dllexport) void GiveItem(int item)
@@ -208,14 +287,12 @@ extern "C"
 
 	__declspec(dllexport) void GottaGoFast()
 	{
-		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
-			MainCharObj2[0]->Speed.x = MainCharObj2[0]->PhysData.HSpeedCap;
+		fasttimer = 60;
 	}
 
 	__declspec(dllexport) void TsafOgAttog()
 	{
-		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
-			MainCharObj2[0]->Speed.x = -MainCharObj2[0]->PhysData.HSpeedCap;
+		fasttimer = -60;
 	}
 
 	__declspec(dllexport) void SuperJump()
@@ -235,7 +312,7 @@ extern "C"
 		TimeStopped ^= 2;
 	}
 
-	__declspec(dllexport) bool Die(const char *user)
+	__declspec(dllexport) bool Die(const char* user)
 	{
 		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
 		{
@@ -246,7 +323,7 @@ extern "C"
 		return false;
 	}
 
-	__declspec(dllexport) bool Win(const char *user)
+	__declspec(dllexport) bool Win(const char* user)
 	{
 		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
 		{
@@ -403,7 +480,7 @@ extern "C"
 		if (MainCharacter[0])
 		{
 			char d2[]{ 0, 0 };
-			ObjectMaster om {};
+			ObjectMaster om{};
 			om.Data2.Undefined = d2;
 			Knuckles2PEarthquakeMan_Delete(&om);
 		}
@@ -419,6 +496,30 @@ extern "C"
 	{
 		if (MainCharacter[0])
 			invwater = !invwater;
+	}
+
+	__declspec(dllexport) bool ChangeCharacter(char ch)
+	{
+		auto chfun = CharLoadFuncs[ch];
+		if (!chfun) return false;
+		ObjectMaster* obj = MainCharacter[0];
+		if (!obj) return false;
+		NJS_VECTOR pos = obj->Data1.Entity->Position;
+		Rotation rot = obj->Data1.Entity->Rotation;
+		NJS_VECTOR scl = obj->Data1.Entity->Scale;
+		short pow = obj->Data2.Character->Powerups;
+		NJS_VECTOR spd = obj->Data2.Character->Speed;
+		obj->DeleteSub(obj);
+		obj->DeleteSub = nullptr;
+		obj->MainSub = DeleteObject_;
+		chfun(0);
+		obj = MainCharacter[0];
+		obj->Data1.Entity->Position = pos;
+		obj->Data1.Entity->Rotation = rot;
+		obj->Data1.Entity->Scale = scl;
+		obj->Data2.Character->Powerups = pow;
+		obj->Data2.Character->Speed = spd;
+		return true;
 	}
 
 	__declspec(dllexport) void OnFrame()
@@ -452,6 +553,19 @@ extern "C"
 			gravmult = 1;
 			invwater = false;
 		}
+		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
+		{
+			if (fasttimer > 0)
+			{
+				--fasttimer;
+				MainCharObj2[0]->Speed.x = MainCharObj2[0]->PhysData.HSpeedCap;
+			}
+			else if (fasttimer < 0)
+			{
+				++fasttimer;
+				MainCharObj2[0]->Speed.x = -MainCharObj2[0]->PhysData.HSpeedCap;
+			}
+		}
 	}
 
 	__declspec(dllexport) void Init(const char* path, const HelperFunctions& helperFunctions)
@@ -472,9 +586,10 @@ extern "C"
 		MusicList2[156] = "chao_g_iede.adx";
 		ResetVotes = (decltype(ResetVotes))GetProcAddress(hm, "ResetVotes");
 		WriteJump((void*)0x4586A0, GetNextStoryEvent_r);
-		NextStoryEntry.Type = StoryEntryType_End;
+		NextStoryEntry.Type = -1;
 		memset(NextStoryEntry.Events, -1, 4);
 		WriteJump((void*)0x459910, sub_459910);
+		//InitBase();
 	}
 
 	__declspec(dllexport) ModInfo SA2ModInfo { ModLoaderVer };

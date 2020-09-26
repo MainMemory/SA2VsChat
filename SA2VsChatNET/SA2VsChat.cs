@@ -18,6 +18,7 @@ using System.Web;
 using System.Web.UI;
 using System.Security;
 using System.Security.Permissions;
+using System.Collections.ObjectModel;
 
 namespace SA2VsChatNET
 {
@@ -34,6 +35,428 @@ namespace SA2VsChatNET
 
 	public static class SA2VsChat
 	{
+		private abstract class Command
+		{
+			public abstract string Name { get; }
+			public virtual bool AdminOnly => false;
+			public AccessLevel AccessLevel { get; set; }
+			public TimeSpan Timeout { get; set; }
+			public DateTime LastUseTime { get; set; }
+
+			public abstract bool DoCommand(string[] split, string userName);
+		}
+
+		public enum AccessLevel { Enabled, AdminOnly, Disabled }
+
+		private sealed class ItemCommand : Command
+		{
+			public override string Name => "Item";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				if (split.Length > 1)
+				{
+					if (itemDict.TryGetValue(split[1], out int v))
+					{
+						GiveItem(v);
+						return true;
+					}
+				}
+				else
+				{
+					int i = RandomNumber(0, 10);
+					if (i == 9)
+						++i;
+					GiveItem(i);
+					return true;
+				}
+				return false;
+			}
+
+			static readonly Dictionary<string, int> itemDict = new Dictionary<string, int>()
+			{
+				{ "speedshoes", 0 },
+				{ "5ring", 1 },
+				{ "1up", 2 },
+				{ "10ring", 3 },
+				{ "20ring", 4 },
+				{ "shield", 5 },
+				{ "bomb", 6 },
+				{ "health", 7 },
+				{ "magnet", 8 },
+				{ "invincibility", 10 }
+			};
+		}
+
+		private sealed class OmochaoCommand : Command
+		{
+			public override string Name => "Omochao";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				SpawnOmochao();
+				return true;
+			}
+		}
+
+		private sealed class VoiceCommand : Command
+		{
+			public override string Name => "Voice";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				if (split.Length > 1)
+				{
+					if (int.TryParse(split[1], out int id) && id >= 0 && id < 2727)
+					{
+						PlayVoice(Math.Min(Math.Max(0, id), 2726));
+						return true;
+					}
+				}
+				else
+				{
+					PlayVoice(RandomNumber(0, 2727));
+					return true;
+				}
+				return false;
+			}
+		}
+
+		private sealed class StopCommand : Command
+		{
+			public override string Name => "Stop";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				Stop();
+				return true;
+			}
+		}
+
+		private sealed class GottaGoFastCommand : Command
+		{
+			public override string Name => "GottaGoFast";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				GottaGoFast();
+				return true;
+			}
+		}
+
+		private sealed class TsafOgAttogCommand : Command
+		{
+			public override string Name => "TsafOgAttog";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				TsafOgAttog();
+				return true;
+			}
+		}
+
+		private sealed class SuperJumpCommand : Command
+		{
+			public override string Name => "SuperJump";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				SuperJump();
+				return true;
+			}
+		}
+
+		private sealed class PmujRepusCommand : Command
+		{
+			public override string Name => "PmujRepus";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				PmujRepus();
+				return true;
+			}
+		}
+
+		private sealed class TimeStopCommand : Command
+		{
+			public override string Name => "TimeStop";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				TimeStop();
+				return true;
+			}
+		}
+
+		private sealed class DieCommand : Command
+		{
+			public override string Name => "Die";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				return Die(userName);
+			}
+		}
+
+		private sealed class WinCommand : Command
+		{
+			public override string Name => "Win";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				return Win(userName);
+			}
+		}
+
+		private sealed class GrowCommand : Command
+		{
+			public override string Name => "Grow";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				Grow();
+				return true;
+			}
+		}
+
+		private sealed class ShrinkCommand : Command
+		{
+			public override string Name => "Shrink";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				Shrink();
+				return true;
+			}
+		}
+
+		private sealed class BonusCommand : Command
+		{
+			public override string Name => "Bonus";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				if (split.Length > 1)
+				{
+					if (bonusDict.TryGetValue(split[1], out int val))
+					{
+						Bonus(val);
+						return true;
+					}
+					else if (int.TryParse(split[1], out val))
+					{
+						Bonus(val);
+						return true;
+					}
+				}
+				else
+				{
+					Bonus(bonusDict.Values.ElementAt(RandomNumber(0, bonusDict.Count)));
+					return true;
+				}
+				return false;
+			}
+
+			static readonly Dictionary<string, int> bonusDict = new Dictionary<string, int>()
+			{
+				{ "good", 100 },
+				{ "nice", 200 },
+				{ "great", 300 },
+				{ "jammin", 400 },
+				{ "cool", 500 },
+				{ "radical", 600 },
+				{ "tight", 800 },
+				{ "awesome", 1000 },
+				{ "extreme", 1500 },
+				{ "perfect", 2000 }
+			};
+		}
+
+		private sealed class MusicCommand : Command
+		{
+			public override string Name => "Music";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				if (split.Length > 1)
+				{
+					if (int.TryParse(split[1], out int mus) && mus >= 0 && mus < 157)
+					{
+						PlayMusic(mus);
+						return true;
+					}
+				}
+				else
+				{
+					PlayMusic(RandomNumber(0, 157));
+					return true;
+				}
+				return false;
+			}
+		}
+
+		private sealed class HighGravityCommand : Command
+		{
+			public override string Name => "HighGravity";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				HighGravity();
+				return true;
+			}
+		}
+
+		private sealed class LowGravityCommand : Command
+		{
+			public override string Name => "LowGravity";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				LowGravity();
+				return true;
+			}
+		}
+
+		private sealed class HealBossCommand : Command
+		{
+			public override string Name => "HealBoss";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				HealBoss();
+				return true;
+			}
+		}
+
+		private sealed class ConfuseCommand : Command
+		{
+			public override string Name => "Confuse";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				Confuse();
+				return true;
+			}
+		}
+
+		private sealed class EarthquakeCommand : Command
+		{
+			public override string Name => "Earthquake";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				Earthquake();
+				return true;
+			}
+		}
+
+		private sealed class ChaoKeyCommand : Command
+		{
+			public override string Name => "ChaoKey";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				ToggleChaoKey();
+				return true;
+			}
+		}
+
+		private sealed class WaterCommand : Command
+		{
+			public override string Name => "Water";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				ToggleWater();
+				return true;
+			}
+		}
+
+		private sealed class VoteCommand : Command
+		{
+			public override string Name => "Vote";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				if (split.Length > 1)
+					switch (split[1].ToLowerInvariant())
+					{
+						case "level":
+							if (split.Length > 2 && levelmap.TryGetValue(split[2], out LevelIDs lvl))
+							{
+								votes[userName] = new Vote(StoryEntryType.Level, (short)(lvl & ~LevelIDs.Dark), lvl.HasFlag(LevelIDs.Dark));
+								TallyVotes();
+							}
+							break;
+						case "event":
+							if (split.Length > 2 && short.TryParse(split[2], out short ev) && events.Contains(ev))
+							{
+								if (!allowCredits && ev == 210) break;
+								votes[userName] = new Vote(StoryEntryType.Event, ev);
+								TallyVotes();
+							}
+							break;
+						case "credits":
+							if (allowCredits)
+							{
+								votes[userName] = new Vote(StoryEntryType.Credits);
+								TallyVotes();
+							}
+							break;
+						case "end":
+							votes[userName] = new Vote(StoryEntryType.End);
+							TallyVotes();
+							break;
+					}
+				return false;
+			}
+		}
+
+		private sealed class CharCommand : Command
+		{
+			public override string Name => "Char";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				if (split.Length > 1 && Enum.TryParse(split[1], true, out Characters ch))
+					return ChangeCharacter((byte)ch);
+				return false;
+			}
+
+			enum Characters
+			{
+				Sonic,
+				Shadow,
+				Tails,
+				Eggman,
+				Knuckles,
+				Rouge,
+				MechTails,
+				MechEggman,
+				Amy,
+				SuperSonic,
+				SuperShadow,
+				B,
+				MetalSonic,
+				ChaoWalker,
+				DarkChaoWalker,
+				Tikal,
+				Chaos
+			};
+
+		}
+
+		private sealed class CommandDictionary : KeyedCollection<string, Command>
+		{
+			public CommandDictionary()
+				: base() { }
+
+			protected override string GetKeyForItem(Command item)
+			{
+				return item.Name.ToLowerInvariant();
+			}
+		}
+
 		public static Random random = new Random();
 		public static int RandomNumber(int min, int max)
 		{
@@ -411,14 +834,14 @@ namespace SA2VsChatNET
 			writer.Write("<style>\n    body {\n      margin: 5px;\n      color: #FFFFFF;\n      text-shadow: 4px 1px #000000;\n      text-align: right;\n      font-size: 12pt;\n      font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n      font-weight: bold;\n      font-style: normal;\n    }\n  </style>");
 			// </head>
 			writer.RenderEndTag();
-		   
+
 			// <body>
 			writer.RenderBeginTag(HtmlTextWriterTag.Body);
 			writer.Write($"<h3>Story Length: {storyLength}</h3>");
 			writer.Write("<h3>Votes:</h3>");
 			if (tally.Count > 0)
 			{
-				foreach (var item in tally.OrderByDescending(a=>a.Value).Take(Math.Min(tally.Count, MaximumVoteResults)))
+				foreach (var item in tally.OrderByDescending(a => a.Value).Take(Math.Min(tally.Count, MaximumVoteResults)))
 				{
 					writer.Write("<div>");
 					switch (item.Key.Type)
@@ -514,15 +937,6 @@ namespace SA2VsChatNET
 			else
 				writer.Write("<div>No votes!</div>");
 
-			writer.Write("<h3>Die command is ");
-			if (DateTime.Now - lastDieCommand <= dieCommandTimeout)
-				writer.Write("not ");
-			writer.Write("available.</h3>");
-
-			writer.Write("<h3>Win command is ");
-			if (DateTime.Now - lastWinCommand <= winCommandTimeout)
-				writer.Write("not ");
-			writer.Write("available.</h3>");
 
 			// </body>
 			writer.RenderEndTag();
@@ -535,43 +949,39 @@ namespace SA2VsChatNET
 			}
 			catch
 			{
-			   
+
 			}
-			
+
 		}
 
-		static readonly Dictionary<string, int> itemDict = new Dictionary<string, int>()
+		static readonly CommandDictionary commands = new CommandDictionary()
 		{
-			{ "speedshoes", 0 },
-			{ "5ring", 1 },
-			{ "1up", 2 },
-			{ "10ring", 3 },
-			{ "20ring", 4 },
-			{ "shield", 5 },
-			{ "bomb", 6 },
-			{ "health", 7 },
-			{ "magnet", 8 },
-			{ "invincibility", 10 }
+			new ItemCommand(),
+			new OmochaoCommand(),
+			new VoiceCommand(),
+			new StopCommand(),
+			new GottaGoFastCommand(),
+			new TsafOgAttogCommand(),
+			new SuperJumpCommand(),
+			new PmujRepusCommand(),
+			new TimeStopCommand(),
+			new DieCommand(),
+			new WinCommand(),
+			new GrowCommand(),
+			new ShrinkCommand(),
+			new BonusCommand(),
+			new MusicCommand(),
+			new HighGravityCommand(),
+			new LowGravityCommand(),
+			new HealBossCommand(),
+			new ConfuseCommand(),
+			new EarthquakeCommand(),
+			new ChaoKeyCommand(),
+			new WaterCommand(),
+			new VoteCommand(),
+			//new CharCommand(),
 		};
 
-		static readonly Dictionary<string, int> bonusDict = new Dictionary<string, int>()
-		{
-			{ "good", 100 },
-			{ "nice", 200 },
-			{ "great", 300 },
-			{ "jammin", 400 },
-			{ "cool", 500 },
-			{ "radical", 600 },
-			{ "tight", 800 },
-			{ "awesome", 1000 },
-			{ "extreme", 1500 },
-			{ "perfect", 2000 }
-		};
-
-		static TimeSpan dieCommandTimeout;
-		static DateTime lastDieCommand;
-		static TimeSpan winCommandTimeout;
-		static DateTime lastWinCommand;
 		public static void ProcessMessage(string message, string userName)
 		{
 			userName = userName.ToLowerInvariant();
@@ -588,139 +998,21 @@ namespace SA2VsChatNET
 				return;
 
 			string[] split = message.Substring(1).Split(' ');
-
+			bool isadmin = false;
 			if (userName == Room || userName == AdminUsrName)
-			{
-				// admin stuff
-			}
+				isadmin = true;
 
-			switch (split[0])
+			if (commands.Contains(split[0]))
 			{
-				case "item":
-					if (split.Length > 1)
-					{
-						if (itemDict.TryGetValue(split[1], out int v))
-							GiveItem(v);
-					}
-					else
-					{
-						int i = RandomNumber(0, 10);
-						if (i == 9)
-							++i;
-						GiveItem(i);
-					}
-					break;
-				case "omochao":
-					SpawnOmochao();
-					break;
-				case "voice":
-					if (split.Length > 1)
-					{
-						if (int.TryParse(split[1], out int id) && id >= 0 && id < 2727)
-							PlayVoice(Math.Min(Math.Max(0, id), 2726));
-					}
-					else
-						PlayVoice(RandomNumber(0, 2727));
-					break;
-				case "stop":
-					Stop();
-					break;
-				case "gottagofast":
-					GottaGoFast();
-					break;
-				case "tsafogattog":
-					TsafOgAttog();
-					break;
-				case "superjump":
-					SuperJump();
-					break;
-				case "pmujrepus":
-					PmujRepus();
-					break;
-				case "timestop":
-					TimeStop();
-					break;
-				case "die":
-					if (DateTime.Now - lastDieCommand > dieCommandTimeout && Die(userName))
-						lastDieCommand = DateTime.Now;
-					break;
-				case "win":
-					if (DateTime.Now - lastWinCommand > winCommandTimeout && Win(userName))
-						lastWinCommand = DateTime.Now;
-					break;
-				case "grow":
-					Grow();
-					break;
-				case "shrink":
-					Shrink();
-					break;
-				case "bonus":
-					if (split.Length > 1)
-					{
-						if (bonusDict.TryGetValue(split[1], out int val))
-							Bonus(val);
-						else if (int.TryParse(split[1], out val))
-							Bonus(val);
-					}
-					else
-						Bonus(bonusDict.Values.ElementAt(RandomNumber(0, bonusDict.Count)));
-					break;
-				case "music":
-					if (split.Length > 1)
-					{
-						if (int.TryParse(split[1], out int mus) && mus >= 0 && mus < 157)
-							PlayMusic(mus);
-					}
-					else
-						PlayMusic(RandomNumber(0, 157));
-					break;
-				case "highgravity":
-					HighGravity();
-					break;
-				case "lowgravity":
-					LowGravity();
-					break;
-				case "healboss":
-					HealBoss();
-					break;
-				case "confuse":
-					Confuse();
-					break;
-				case "earthquake":
-					Earthquake();
-					break;
-				case "chaokey":
-					ToggleChaoKey();
-					break;
-				case "water":
-					ToggleWater();
-					break;
-				case "level":
-					if (split.Length > 1 && levelmap.TryGetValue(split[1], out LevelIDs lvl))
-					{
-						votes[userName] = new Vote(StoryEntryType.Level, (short)(lvl & ~LevelIDs.Dark), lvl.HasFlag(LevelIDs.Dark));
-						TallyVotes();
-					}
-					break;
-				case "event":
-					if (split.Length > 1 && short.TryParse(split[1], out short ev) && events.Contains(ev))
-					{
-						if (!allowCredits && ev == 210) break;
-						votes[userName] = new Vote(StoryEntryType.Event, ev);
-						TallyVotes();
-					}
-					break;
-				case "credits":
-					if (allowCredits)
-					{
-						votes[userName] = new Vote(StoryEntryType.Credits);
-						TallyVotes();
-					}
-					break;
-				case "endstory":
-					votes[userName] = new Vote(StoryEntryType.End);
-					TallyVotes();
-					break;  
+				var cmd = commands[split[0]];
+				if (cmd.AccessLevel == AccessLevel.Disabled)
+					return;
+				if ((cmd.AdminOnly || cmd.AccessLevel == AccessLevel.AdminOnly) && !isadmin)
+					return;
+				if (DateTime.Now - cmd.LastUseTime < cmd.Timeout)
+					return;
+				if (cmd.DoCommand(split, userName))
+					cmd.LastUseTime = DateTime.Now;
 			}
 
 			if (AllowBuildHTMLPagesForOverlay)
@@ -815,17 +1107,19 @@ namespace SA2VsChatNET
 				MyIni.Discord = new SettingsDiscord();
 			if (MyIni.YouTube == null)
 				MyIni.YouTube = new SettingsYouTube();
+			if (MyIni.CommandAccess == null)
+				MyIni.CommandAccess = new SettingsCommandAccess();
+			if (MyIni.CommandAccess.AccessLevels == null)
+				MyIni.CommandAccess.AccessLevels = new Dictionary<string, AccessLevel>();
+			if (MyIni.CommandTimeout == null)
+				MyIni.CommandTimeout = new SettingsCommandTimeout();
+			if (MyIni.CommandTimeout.Timeouts == null)
+				MyIni.CommandTimeout.Timeouts = new Dictionary<string, double>();
 			AdminUsrName = MyIni.General.AdminUsername?.ToLowerInvariant();
 		   
 			AllowBuildHTMLPagesForOverlay = MyIni.General.BuildHTMLPagesForOverlay;
 			if (AllowBuildHTMLPagesForOverlay)
 				DoBuildHTML();
-
-			dieCommandTimeout = TimeSpan.FromMinutes(MyIni.General.DieCommandTimeout);
-			lastDieCommand = DateTime.Now;
-
-			winCommandTimeout = TimeSpan.FromMinutes(MyIni.General.WinCommandTimeout);
-			lastWinCommand = DateTime.Now;
 
 			MaximumVoteResults = MyIni.General.MaximumVoteResults;
 
@@ -837,6 +1131,13 @@ namespace SA2VsChatNET
 			YoutubeVideoIDFromSettings = MyIni.YouTube.VideoID;
 			AllowVideoIDForm = MyIni.YouTube.PromptForVideoID;
 			YoutubeAPIKey = MyIni.YouTube.APIKey;
+			foreach (var cmd in commands)
+			{
+				if (MyIni.CommandAccess.AccessLevels.ContainsKey(cmd.Name))
+					cmd.AccessLevel = MyIni.CommandAccess.AccessLevels[cmd.Name];
+				if (MyIni.CommandTimeout.Timeouts.ContainsKey(cmd.Name))
+					cmd.Timeout = TimeSpan.FromSeconds(MyIni.CommandTimeout.Timeouts[cmd.Name]);
+			}
 			Console.WriteLine("------------------------------------------ ");
 			Console.WriteLine("Twitch Support - {0} ", EnableTwitchSupport);
 			Console.WriteLine("Discord Support - {0} ", EnableDiscordSupport);
@@ -892,6 +1193,8 @@ namespace SA2VsChatNET
 		public static extern void ToggleWater();
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void SetNextStoryEvent(byte type, short id, bool dark);
+		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern bool ChangeCharacter(byte ch);
 	}
 
 }
