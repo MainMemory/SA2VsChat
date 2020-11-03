@@ -41,6 +41,7 @@ namespace SA2VsChatNET
 			public virtual bool AdminOnly => false;
 			public AccessLevel AccessLevel { get; set; }
 			public TimeSpan Timeout { get; set; }
+			public virtual TimeSpan DefaultTimeout => TimeSpan.FromSeconds(5);
 			public DateTime LastUseTime { get; set; }
 
 			public abstract bool DoCommand(string[] split, string userName);
@@ -51,6 +52,8 @@ namespace SA2VsChatNET
 		private sealed class ItemCommand : Command
 		{
 			public override string Name => "Item";
+
+			public override TimeSpan DefaultTimeout => TimeSpan.Zero;
 
 			public override bool DoCommand(string[] split, string userName)
 			{
@@ -192,6 +195,8 @@ namespace SA2VsChatNET
 		{
 			public override string Name => "Die";
 
+			public override TimeSpan DefaultTimeout => TimeSpan.FromSeconds(300);
+
 			public override bool DoCommand(string[] split, string userName)
 			{
 				return Die(userName);
@@ -201,6 +206,8 @@ namespace SA2VsChatNET
 		private sealed class WinCommand : Command
 		{
 			public override string Name => "Win";
+
+			public override TimeSpan DefaultTimeout => TimeSpan.FromSeconds(300);
 
 			public override bool DoCommand(string[] split, string userName)
 			{
@@ -317,6 +324,28 @@ namespace SA2VsChatNET
 			}
 		}
 
+		private sealed class SpeedUpCommand : Command
+		{
+			public override string Name => "SpeedUp";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				SpeedUp();
+				return true;
+			}
+		}
+
+		private sealed class SlowDownCommand : Command
+		{
+			public override string Name => "SlowDown";
+
+			public override bool DoCommand(string[] split, string userName)
+			{
+				SlowDown();
+				return true;
+			}
+		}
+
 		private sealed class HealBossCommand : Command
 		{
 			public override string Name => "HealBoss";
@@ -375,6 +404,8 @@ namespace SA2VsChatNET
 		private sealed class VoteCommand : Command
 		{
 			public override string Name => "Vote";
+
+			public override TimeSpan DefaultTimeout => TimeSpan.Zero;
 
 			public override bool DoCommand(string[] split, string userName)
 			{
@@ -786,8 +817,8 @@ namespace SA2VsChatNET
 		};
 
 		static bool allowCredits = true;
-		static Dictionary<string, Vote> votes = new Dictionary<string, Vote>();
-		static Dictionary<Vote, int> tally = new Dictionary<Vote, int>();
+		static readonly Dictionary<string, Vote> votes = new Dictionary<string, Vote>();
+		static readonly Dictionary<Vote, int> tally = new Dictionary<Vote, int>();
 		static Vote topResult = new Vote(StoryEntryType.End);
 		static int storyLength = 0;
 		public static void TallyVotes()
@@ -804,7 +835,6 @@ namespace SA2VsChatNET
 			SetNextStoryEvent((byte)topResult.Type, topResult.ID, topResult.Dark);
 		}
 
-		[DllExport(CallingConvention.Cdecl)]
 		public static void ResetVotes(int eventno)
 		{
 			votes.Clear();
@@ -973,6 +1003,8 @@ namespace SA2VsChatNET
 			new MusicCommand(),
 			new HighGravityCommand(),
 			new LowGravityCommand(),
+			new SpeedUpCommand(),
+			new SlowDownCommand(),
 			new HealBossCommand(),
 			new ConfuseCommand(),
 			new EarthquakeCommand(),
@@ -1029,6 +1061,8 @@ namespace SA2VsChatNET
 		public static string YoutubeVideoIDFromSettings = "";
 		public static string YoutubeAPIKey = "";
 		public static int MaximumVoteResults = 3;
+		public delegate void ResetVotesDelegate(int eventno);
+		public static ResetVotesDelegate ResetVotesDI = ResetVotes;
 
 		static AppDomain _childDomain;
 		[DllExport(CallingConvention.Cdecl)]
@@ -1086,6 +1120,7 @@ namespace SA2VsChatNET
 			{
 				new Thread(() => Youtube.ProcessYoutubeThread()).Start();
 			}
+			SetResetVotesPtr(Marshal.GetFunctionPointerForDelegate(ResetVotesDI));
 		}
 
 		public static void LoadINIFile()
@@ -1137,6 +1172,8 @@ namespace SA2VsChatNET
 					cmd.AccessLevel = MyIni.CommandAccess.AccessLevels[cmd.Name];
 				if (MyIni.CommandTimeout.Timeouts.ContainsKey(cmd.Name))
 					cmd.Timeout = TimeSpan.FromSeconds(MyIni.CommandTimeout.Timeouts[cmd.Name]);
+				else
+					cmd.Timeout = cmd.DefaultTimeout;
 			}
 			Console.WriteLine("------------------------------------------ ");
 			Console.WriteLine("Twitch Support - {0} ", EnableTwitchSupport);
@@ -1182,6 +1219,10 @@ namespace SA2VsChatNET
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void LowGravity();
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern void SpeedUp();
+		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern void SlowDown();
+		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void HealBoss();
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void Confuse();
@@ -1195,6 +1236,8 @@ namespace SA2VsChatNET
 		public static extern void SetNextStoryEvent(byte type, short id, bool dark);
 		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		public static extern bool ChangeCharacter(byte ch);
+		[DllImport("SA2VsChat.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern bool SetResetVotesPtr(IntPtr ptr);
 	}
 
 }

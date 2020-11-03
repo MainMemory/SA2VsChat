@@ -92,7 +92,6 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\SA2CharSel\SA2CharSel\Base.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="mod.cpp" />
     <ClCompile Include="pch.cpp">

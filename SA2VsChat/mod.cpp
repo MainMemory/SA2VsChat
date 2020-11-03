@@ -70,7 +70,7 @@ static inline void LoadStoryEvent(StoryEntry* a1)
 	}
 }
 
-void (*ResetVotes)(int eventno);
+void (__stdcall* ResetVotes)(int eventno);
 StoryEntry NextStoryEntry;
 DataArray(StoryEntry, HeroStorySequence, 0x173A148, 46);
 DataArray(StoryEntry, DarkStorySequence, 0x173A370, 44);
@@ -253,11 +253,12 @@ void (__cdecl* CharLoadFuncs[])(int) = {
 };
 
 int fasttimer = 0;
+int speedlevel = 0;
 extern "C"
 {
 	__declspec(dllexport) void GiveItem(int item)
 	{
-		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead) && CurrentLevel < LevelIDs_Route101280)
+		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead) && CurrentLevel < LevelIDs_Route101280 && CurrentLevel != LevelIDs_FinalHazard)
 		{
 			DisplayItemBoxItem(0, ItemBox_Items[item].Texture);
 			ItemBox_Items[item].Code(MainCharacter[0], 0);
@@ -266,7 +267,7 @@ extern "C"
 
 	__declspec(dllexport) void SpawnOmochao()
 	{
-		if (GameState == GameStates_Ingame && CurrentLevel < LevelIDs_Route101280)
+		if (GameState == GameStates_Ingame && CurrentLevel < LevelIDs_Route101280 && CurrentLevel != LevelIDs_FinalHazard)
 			AllocateObjectMaster(CheckLoadOmochao, 2, "CheckLoadOmochao");
 	}
 
@@ -336,12 +337,14 @@ extern "C"
 
 	__declspec(dllexport) void Grow()
 	{
-		SetTargetSize(targetSize * 2);
+		if (targetSize < 8)
+			SetTargetSize(targetSize * 2);
 	}
 
 	__declspec(dllexport) void Shrink()
 	{
-		SetTargetSize(targetSize / 2);
+		if (targetSize > 0.125)
+			SetTargetSize(targetSize / 2);
 	}
 
 	__declspec(dllexport) void Bonus(int scr)
@@ -358,19 +361,41 @@ extern "C"
 
 	__declspec(dllexport) void HighGravity()
 	{
-		if (MainCharObj1[0])
+		if (MainCharObj1[0] && gravmult < 8)
 			gravmult *= 2;
 	}
 
 	__declspec(dllexport) void LowGravity()
 	{
-		if (MainCharObj1[0])
+		if (MainCharObj1[0] && gravmult > 0.125)
 			gravmult /= 2;
+	}
+
+	__declspec(dllexport) void SpeedUp()
+	{
+		if (MainCharObj2[0] && speedlevel < 3)
+		{
+			++speedlevel;
+			MainCharObj2[0]->PhysData.GroundAccel *= 2;
+			MainCharObj2[0]->PhysData.MaxAccel *= 2;
+			MainCharObj2[0]->PhysData.field_68 *= 2;
+		}
+	}
+
+	__declspec(dllexport) void SlowDown()
+	{
+		if (MainCharObj2[0] && speedlevel > -3)
+		{
+			--speedlevel;
+			MainCharObj2[0]->PhysData.GroundAccel /= 2;
+			MainCharObj2[0]->PhysData.MaxAccel /= 2;
+			MainCharObj2[0]->PhysData.field_68 /= 2;
+		}
 	}
 
 	__declspec(dllexport) void HealBoss()
 	{
-		if (MainCharObj1[1] && MainCharObj1[1]->field_2 == 3 && MainCharObj2[1]->MechHP < 5)
+		if (MainCharObj2[1] && MainCharObj2[1]->MechHP < 5)
 			++MainCharObj2[1]->MechHP;
 	}
 
@@ -495,7 +520,24 @@ extern "C"
 	__declspec(dllexport) void ToggleWater()
 	{
 		if (MainCharacter[0])
+		{
 			invwater = !invwater;
+			if (invwater)
+				switch (CurrentLevel)
+				{
+				case LevelIDs_SecurityHall:
+				case LevelIDs_WildCanyon:
+				case LevelIDs_MeteorHerd:
+				case LevelIDs_KnucklesVsRouge:
+				case LevelIDs_WildCanyon2P:
+				case LevelIDs_MadSpace:
+				case LevelIDs_PlanetQuest:
+				case LevelIDs_KingBoomBoo:
+				case LevelIDs_ChaoWorld:
+					LoadDryLagoon2PCharAnims();
+					break;
+				}
+		}
 	}
 
 	__declspec(dllexport) bool ChangeCharacter(char ch)
@@ -520,6 +562,11 @@ extern "C"
 		obj->Data2.Character->Powerups = pow;
 		obj->Data2.Character->Speed = spd;
 		return true;
+	}
+
+	__declspec(dllexport) void SetResetVotesPtr(void(__stdcall* ptr)(int))
+	{
+		ResetVotes = ptr;
 	}
 
 	__declspec(dllexport) void OnFrame()
@@ -551,7 +598,18 @@ extern "C"
 			currentSize = 1;
 			growthAmount = 0;
 			gravmult = 1;
+			speedlevel = 0;
 			invwater = false;
+			for (int i = 0; i < DryLagoon2PCharAnims_Length; ++i)
+			{
+				short ind = DryLagoon2PCharAnims[i].Index;
+				if (ind == -1) break;
+				if (CharacterAnimations[ind].Animation == DryLagoon2PCharAnims[i].Animation)
+				{
+					CharacterAnimations[ind].Count = 0;
+					CharacterAnimations[ind].Animation = nullptr;
+				}
+			}
 		}
 		if (MainCharObj2[0] && !(MainCharObj2[0]->Powerups & Powerups_Dead))
 		{
@@ -584,7 +642,6 @@ extern "C"
 		SetCurrentDirectoryA(buf);
 		memcpy(MusicList2, MusicList, MusicList_Length * 4);
 		MusicList2[156] = "chao_g_iede.adx";
-		ResetVotes = (decltype(ResetVotes))GetProcAddress(hm, "ResetVotes");
 		WriteJump((void*)0x4586A0, GetNextStoryEvent_r);
 		NextStoryEntry.Type = -1;
 		memset(NextStoryEntry.Events, -1, 4);
