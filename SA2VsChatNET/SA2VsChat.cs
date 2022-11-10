@@ -1017,8 +1017,8 @@ namespace SA2VsChatNET
 		public static void ProcessMessage(string message, string userName)
 		{
 			userName = userName.ToLowerInvariant();
-			message = message.ToLowerInvariant();
-		   // Console.WriteLine("From: {0} - Message:{1} ", channelName, msg);
+			message = message.ToLowerInvariant().Trim();
+			// Console.WriteLine("From: {0} - Message:{1} ", channelName, msg);
 			if (userName == "streamlabs")
 			{
 
