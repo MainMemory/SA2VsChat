@@ -30,6 +30,7 @@ namespace SA2VsChatNET
 	{
 		public bool Enable { get; set; }
 		public string ChannelName { get; set; }
+		public SA2VsChat.TwitchConnectionMethod ConnectionMethod { get; set; }
 	}
 
 	public class SettingsDiscord

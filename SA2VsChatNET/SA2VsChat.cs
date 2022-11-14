@@ -48,6 +48,7 @@ namespace SA2VsChatNET
 		}
 
 		public enum AccessLevel { Enabled, AdminOnly, Disabled }
+		public enum TwitchConnectionMethod { TCP, Websocket }
 
 		private sealed class ItemCommand : Command
 		{
@@ -517,38 +518,40 @@ namespace SA2VsChatNET
 		}
 		public static int Timer = 0;
 
-		public static string ServerIP = "irc.twitch.tv";
+		//public static string ServerIP = "irc.twitch.tv";
 		public static string Room = "";
 		public static string User = $"justinfan{Random14Char()}";
 		public static string Key = "";
-		public static int Port = 6667;
+		//public static int Port = 6667;
 
 		public static void ProcessTwitchClient()
 		{
-			TwitchIRCClient TwitchClient = new TwitchIRCClient(ServerIP, Port, User, Key);
-			TwitchClient.JoinChannel(Room);
-			while (TwitchClient.connected)
+			switch(IRCConnectionMethod)
 			{
-				string message = TwitchClient.ReadMessage();
-				if (message != null && message.Length > 1)
-				{
-					if (message.ToLower().Contains("tmi.twitch.tv privmsg #"))
+				case TwitchConnectionMethod.TCP:
+					TwitchTcpClient tcpClient = new TwitchTcpClient("irc.twitch.tv", 6667, User, Key);
+					tcpClient.JoinChannel(Room);
+					while(tcpClient.connected)
 					{
-						string name = "Unknown";
-						try
-						{
-							name = message.Split(':')[1].Split('!')[0];
-						}
-						catch { }
-						ProcessMessage(message.Split(new[] { ("#" + Room + " :") }, StringSplitOptions.None)[1], name);
+						tcpClient.ProcessMessage(tcpClient.ReadMessage());
+						Thread.Sleep(50);
 					}
-					else if (message.ToLower().Contains("tmi.twitch.tv 366"))
+					break;
+
+				case TwitchConnectionMethod.Websocket:
+					TwitchWebSocketClient WSclient = new TwitchWebSocketClient("irc-ws.chat.twitch.tv", 443, User, Key);
+					// Wait for connection
+					while (!WSclient.connected)
 					{
-						// Comment the line below if you want to see what we're sending and receiving
-						//irc.printIRC = false;
+						if (WSclient.errored)
+							return;
 					}
-				}
-				Thread.Sleep(50);
+					WSclient.JoinChannel(Room);
+					while (WSclient.connected)
+					{
+						Thread.Sleep(50);
+					}
+					break;
 			}
 
 		}
@@ -1056,6 +1059,7 @@ namespace SA2VsChatNET
 		public static bool EnableDiscordSupport = false;
 		public static bool EnableTwitchSupport = false;
 		public static bool EnableYoutubeSupport = false;
+		public static TwitchConnectionMethod IRCConnectionMethod = TwitchConnectionMethod.TCP;
 		public static bool AllowVideoIDForm = true;
 		public static bool AllowBuildHTMLPagesForOverlay = true;
 		public static string YoutubeVideoIDFromSettings = "";
@@ -1159,6 +1163,7 @@ namespace SA2VsChatNET
 			MaximumVoteResults = MyIni.General.MaximumVoteResults;
 
 			EnableTwitchSupport = MyIni.Twitch.Enable;
+			IRCConnectionMethod = MyIni.Twitch.ConnectionMethod;
 			Room = MyIni.Twitch.ChannelName?.ToLowerInvariant();
 			EnableDiscordSupport = MyIni.Discord.Enable;
 			Discord.TempTokenToLoad = MyIni.Discord.BotKey;
@@ -1177,6 +1182,7 @@ namespace SA2VsChatNET
 			}
 			Console.WriteLine("------------------------------------------ ");
 			Console.WriteLine("Twitch Support - {0} ", EnableTwitchSupport);
+			Console.WriteLine("Twitch Connection Method - {0} ", IRCConnectionMethod);
 			Console.WriteLine("Discord Support - {0} ", EnableDiscordSupport);
 			Console.WriteLine("Youtube Support - {0} ", EnableYoutubeSupport);
 			Console.WriteLine("------------------------------------------ ");
